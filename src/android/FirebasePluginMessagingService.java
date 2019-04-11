@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.app.Notification;
@@ -17,6 +18,7 @@ import android.graphics.Color;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.ucsit.mhospitals.MainActivity;
 
 import java.util.List;
 import java.util.Map;
@@ -212,6 +214,19 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             bundle.putString("title", title);
             bundle.putString("body", messageBody);
             FirebasePlugin.sendNotification(bundle, this.getApplicationContext());
+            // Special handling for video calls - start and open app to show call screen
+            if (bundle.getString("type").equals("OUTGOING_VIDEO_CALL")) {
+                wakeAndStartApplication();
+            }
         }
+    }
+    private void wakeAndStartApplication() {
+        Intent intent = new Intent(this.getApplicationContext().getApplicationContext(), MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startActivity(intent);
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK|PowerManager.ACQUIRE_CAUSES_WAKEUP, "mhospitals:incomingvideo");
+        wakeLock.acquire();
+        wakeLock.release();
     }
 }
